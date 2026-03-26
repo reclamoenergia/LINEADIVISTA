@@ -1,0 +1,15 @@
+[general]
+name=LineaDiVista
+qgisMinimumVersion=3.28
+description=Extract orographic profiles from DEMs and export visibility-aware PNG reports.
+version=1.0.0
+author=LineaDiVista
+email=info@example.com
+about=Creates terrain profiles from manual lines or line layers, computes screening terrain points, and exports 3200x1200 PNG plots with observer/object visibility rendering.
+tracker=
+repository=
+category=Analysis
+icon=
+experimental=False
+deprecated=False
+hasProcessingProvider=False
