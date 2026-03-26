@@ -46,24 +46,28 @@ def render_profile_png(
     object_ground = y[-1]
     object_top = _object_top_elevation(profile, obj)
 
-    y_min_data = min(min(y), observer_y, object_ground)
-    y_max_data = max(max(y), object_top)
-    x_range = end_x
-    y_range = y_max_data - y_min_data
+    x_max_content = max(end_x, _object_x_max(end_x, obj), _sight_lines_x_max(x, visibility))
+    x_span = max(1.0, x_max_content)
+    object_overhang = max(0.0, _object_x_max(end_x, obj) - end_x)
+    x_padding = max(1.0, x_span * 0.01, object_overhang * 0.10)
+    x_max_plot = x_max_content + x_padding
+    x_range = x_max_plot
 
-    ax.set_xlim(0, x_range)
+    ax.set_xlim(0, x_max_plot)
 
     target_ratio = (width_px * 0.88) / (height_px * 0.80)
-    required_y_range = x_range / target_ratio if x_range > 0 else max(1.0, y_range)
-    used_y_range = max(y_range, required_y_range)
-    y_center = (y_min_data + y_max_data) / 2.0
-    ax.set_ylim(y_center - used_y_range / 2.0, y_center + used_y_range / 2.0)
+    y_min_plot = 0.0
+    y_max_content = max(max(y), observer_y, object_top)
+    y_padding = max(1.0, (y_max_content - y_min_plot) * 0.03)
+    required_y_range = x_range / target_ratio if x_range > 0 else max(1.0, y_max_content - y_min_plot)
+    y_max_plot = max(y_max_content + y_padding, y_min_plot + required_y_range)
+    ax.set_ylim(y_min_plot, y_max_plot)
 
     ax.plot(x, y, color="#1f1f1f", linewidth=2.2, label="Terrain profile", zorder=3)
 
     # Observer marker and label
     ax.scatter([0], [observer_y], color="#0d6efd", s=50, zorder=6)
-    ax.text(0 + x_range * 0.01, observer_y + used_y_range * 0.02, observer_label, color="#0d6efd", fontsize=11)
+    ax.text(0 + x_range * 0.01, observer_y + (y_max_plot - y_min_plot) * 0.02, observer_label, color="#0d6efd", fontsize=11)
 
     # Screening point
     si = visibility.screening_index
@@ -98,7 +102,7 @@ def render_profile_png(
 
     ax.set_xlabel("Distance (m)")
     ax.set_ylabel("Elevation (m)")
-    ax.set_xticks(_ticks(0, x_range, 500))
+    ax.set_xticks(_ticks(0, x_max_plot, 500))
     ymin, ymax = ax.get_ylim()
     ax.set_yticks(_ticks(math.floor(ymin / 100) * 100, math.ceil(ymax / 100) * 100, 100))
     ax.grid(True, color="#d3d3d3", linewidth=0.6)
@@ -153,6 +157,25 @@ def _draw_turbine(ax, x, ground, obj: ObjectSpec, visible_ratio):
         else:
             style = "-" if visible_ratio > 0 else "--"
             ax.plot([x, x2], [hub, y2], color="#c1121f", linewidth=1.5, linestyle=style, zorder=5)
+
+
+def _object_x_max(x: float, obj: ObjectSpec) -> float:
+    if obj.kind != "turbine":
+        return x
+    radius = max(0.0, obj.rotor_diameter / 2.0)
+    blade_angles = [90, 210, 330]
+    blade_x = [x + radius * math.cos(math.radians(ang)) for ang in blade_angles]
+    return max([x] + blade_x)
+
+
+def _sight_lines_x_max(x, visibility: VisibilityResult) -> float:
+    if len(x) == 0:
+        return 0.0
+    candidates = [x[-1]]
+    si = visibility.screening_index
+    if 0 <= si < len(x):
+        candidates.append(x[si])
+    return max(candidates)
 
 
 def _ticks(start, end, step):
