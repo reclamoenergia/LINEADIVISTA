@@ -43,6 +43,7 @@ def render_profile_png(
     y = profile.terrain_elevations
     observer_y = y[0] + observer_height
     end_x = x[-1]
+    right_padding_m = 100.0
     object_ground = y[-1]
     object_top = _object_top_elevation(profile, obj)
 
@@ -51,10 +52,11 @@ def render_profile_png(
     x_range = end_x
     y_range = y_max_data - y_min_data
 
-    ax.set_xlim(0, x_range)
+    x_axis_max = x_range + right_padding_m
+    ax.set_xlim(0, x_axis_max)
 
     target_ratio = (width_px * 0.88) / (height_px * 0.80)
-    required_y_range = x_range / target_ratio if x_range > 0 else max(1.0, y_range)
+    required_y_range = x_axis_max / target_ratio if x_axis_max > 0 else max(1.0, y_range)
     used_y_range = max(y_range, required_y_range)
     y_center = (y_min_data + y_max_data) / 2.0
     ax.set_ylim(y_center - used_y_range / 2.0, y_center + used_y_range / 2.0)
@@ -98,7 +100,7 @@ def render_profile_png(
 
     ax.set_xlabel("Distance (m)")
     ax.set_ylabel("Elevation (m)")
-    ax.set_xticks(_ticks(0, x_range, 500))
+    ax.set_xticks(_ticks(0, x_axis_max, 500))
     ymin, ymax = ax.get_ylim()
     ax.set_yticks(_ticks(math.floor(ymin / 100) * 100, math.ceil(ymax / 100) * 100, 100))
     ax.grid(True, color="#d3d3d3", linewidth=0.6)
